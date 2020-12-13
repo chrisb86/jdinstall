@@ -25,6 +25,7 @@
 BASEDIR="/usr/local/share/java/jdownloader"
 RC_SCRIPT="/usr/local/etc/rc.d/jdownloader"
 JD_DEPENDENCIES="openjdk8"
+MKDIR="${BASEDIR} /usr/local/etc/rc.d /var/log/"
 
 ## Check dependencies
 for pkg in ${JD_DEPENDENCIES}; do
@@ -37,7 +38,7 @@ done
 ## Create user and directories
 echo ">>> Creating user and directories"
 pw user add jdownloader -c jdownloader -u 1001 -d /nonexistent -s /usr/bin/nologin
-mkdir -p ${BASEDIR} /usr/local/etc/rc.d
+mkdir -p ${MKDIR}
 
 ## Download JDownloder
 
@@ -96,10 +97,10 @@ load_rc_config ${name}
 : ${jdownloader_java_home=/usr/local/openjdk8}
 : ${jdownloader_javaflags="-Djava.awt.headless=true -Xmx1024M"}
 
-pidfile="/var/run/jdownloader/${name}.pid"
+pidfile="${jdownloader_chdir}/JDownloader.pid"
 procname=${jdownloader_java_home}/bin/java
 command=/usr/sbin/daemon
-command_args="-f -p ${pidfile} ${jdownloader_java_home}/bin/java ${jdownloader_javaflags} -jar ${jdownloader_chdir}/JDownloader.jar"
+command_args="-f ${jdownloader_java_home}/bin/java ${jdownloader_javaflags} -jar ${jdownloader_chdir}/JDownloader.jar"
 start_precmd=start_precmd
 stop_precmd=stop_precmd
 stop_postcmd=stop_postcmd
@@ -108,8 +109,8 @@ export CLASSPATH=$(echo ${jdownloader_chdir}/lib/*.jar | tr ' ' ':')
 
 start_precmd()
 {
-	if [ ! -e /var/run/jdownloader ] ; then
-		install -d -o jdownloader -g jdownloader /var/run/jdownloader;
+	if [ ! -e /var/log/${name} ] ; then
+		install -d -o ${jdownloader_user} -g ${jdownloader_group} /var/log/${name};
 	fi
 }
 
@@ -138,7 +139,7 @@ chmod u+x ${RC_SCRIPT}
 
 ## Set permissions
 echo ">>> Setting permissions."
-chown -R jdownloader:jdownloader ${BASEDIR}
+chown -R jdownloader:jdownloader ${MKDIR}
 
 echo ">>> Enabling jdownloader service"
 sysrc "jdownloader_enable=YES"
